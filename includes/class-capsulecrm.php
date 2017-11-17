@@ -48,31 +48,34 @@ class CapsuleCRM {
 		}
 
 		/* Execute request. */
-		$result         = wp_remote_request( $request_url, $args );
-		$decoded_result = json_decode( $result['body'], true );
-			
+		$result = wp_remote_request( $request_url, $args );
+
 		/* If WP_Error, throw exception */
 		if ( is_wp_error( $result ) ) {
-			throw new Exception( 'Request failed. '. $result->get_error_messages() );
+			throw new Exception( 'Request failed. ' . $result->get_error_message() );
 		}
-		
+
 		/* If API credentials failed, throw exception. */
-		if ( strpos( rgars( $result, 'response/content-type' ), 'application/json' ) == FALSE && $result['response']['code'] !== $expected_code ) {
+		if ( strpos( rgars( $result, 'response/content-type' ), 'application/json' ) == false && $result['response']['code'] !== $expected_code ) {
 			throw new Exception( 'API credentials invalid.' );
 		}
-		
+
+		$decoded_result = json_decode( $result['body'], true );
+
 		/* If return HTTP code does not match expected code, throw exception. */
 		if ( $result['response']['code'] !== $expected_code ) {
-			throw new CapsuleCRM_Exception( $decoded_result['message'], $result['response']['code'], null, rgar( $decoded_result, 'errors' ) );				}
-			
+			throw new CapsuleCRM_Exception( $decoded_result['message'], $result['response']['code'], null, rgar( $decoded_result, 'errors' ) );
+		}
+
 		/* If the decoded result isn't empty, return it. */
 		if ( ! empty( $decoded_result ) ) {
 			return $decoded_result;
 		}
-		
+
 		/* If the body is empty, retrieve the ID from the location header. */
 		if ( rgars( $result, 'headers/location' ) ) {
 			$new_id = explode( '/', $result['headers']['location'] );
+
 			return end( $new_id );
 		}
 		
